@@ -1,0 +1,59 @@
+cat << 'EOF' > test_b210.py
+import sys
+import numpy as np
+import uhd
+
+def test_b210():
+    print("--- Verificando USRP B210 con Python ---")
+    
+    # 1. Crear el objeto USRP
+    try:
+        usrp = uhd.usrp.MultiUSRP("type=b200")
+    except Exception as e:
+        print(f"[ERROR] No se pudo conectar con el B210: {e}")
+        sys.exit(1)
+
+    print(f"-> Dispositivo detectado: {usrp.get_pp_string()}")
+
+    # 2. Configurar parámetros del receptor (Canal 0)
+    sample_rate = 2e6    # 2 MHz
+    center_freq = 100e6  # 100 MHz (Banda FM comercial)
+    gain = 30           # dB
+
+    usrp.set_rx_rate(sample_rate, 0)
+    usrp.set_rx_freq(uhd.types.TuneRequest(center_freq), 0)
+    usrp.set_rx_gain(gain, 0)
+
+    print(f"-> Tasa de muestreo configurada: {usrp.get_rx_rate(0) / 1e6} MS/s")
+    print(f"-> Frecuencia central configurada: {usrp.get_rx_freq(0) / 1e6} MHz")
+    print(f"-> Ganancia RX configurada: {usrp.get_rx_gain(0)} dB")
+
+    # 3. Preparar el Stream de recepción
+    st_args = uhd.usrp.StreamArgs("fc32", "sc16")
+    st_args.channels = [0]
+    rx_streamer = usrp.get_rx_stream(st_args)
+
+    num_samps = 1024
+    buffer = np.zeros(num_samps, dtype=np.complex64)
+    metadata = uhd.types.RXMetadata()
+
+    # 4. Iniciar la transmisión de datos desde la FPGA
+    stream_cmd = uhd.types.StreamCMD(uhd.types.StreamMode.num_done)
+    stream_cmd.num_samps = num_samps
+    stream_cmd.stream_now = True
+    rx_streamer.issue_stream_cmd(stream_cmd)
+
+    # 5. Capturar muestras
+    samples_received = rx_streamer.recv(buffer, metadata)
+
+    if metadata.error_code != uhd.types.RXMetadataErrorCode.none:
+        print(f"[ERROR] Error al recibir datos: {metadata.strerror()}")
+    else:
+        power_db = 10 * np.log10(np.mean(np.abs(buffer)**2))
+        print(f"-> Captura exitosa: {samples_received} muestras recibidas.")
+        print(f"-> Potencia media del bloque capturado: {power_db:.2f} dBFS")
+        print("\n¡Todo está en orden y listo para trabajar!")
+
+if __name__ == "__main__":
+    test_b210()
+EOF
