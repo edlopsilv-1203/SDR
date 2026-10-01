@@ -7,3 +7,7 @@ sudo uhd_images_downloader
 uhd_find_devices
 *Cargar frimware 
 uhd_usrp_probe
+*
+*Librerias necesarias
+sudo apt update && sudo apt install nano -y
+sudo apt install python3-uhd libuhd-dev uhd-host -y
