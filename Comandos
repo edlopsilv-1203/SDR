@@ -1,0 +1,9 @@
+sudo apt update
+sudo apt install libuhd-dev uhd-host python3-uhd python3-numpy python3-scipy -y
+
+sudo uhd_images_downloader
+
+*Entontrar SDR
+uhd_find_devices
+*Cargar frimware 
+uhd_usrp_probe
